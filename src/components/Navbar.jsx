@@ -1,83 +1,68 @@
+import React, {useState, useEffect, useCallback} from 'react';
 import styled from 'styled-components';
-import {useEffect, useState} from "react";
-import {FaBars} from "react-icons/fa6";
+import {FaBars, FaMoon, FaRegSun} from "react-icons/fa";
 import {IoClose} from "react-icons/io5";
-import {FaMoon, FaRegSun} from "react-icons/fa";
-import ReactDOM from "react-dom/client";
 
 
 const Navbar = () => {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isLightMode, setIsLightMode] = useState(true);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    const [title] = useState("YourTitle");
-    const [routes] = useState([["index.html", "Home"], ["about.html", "About"], ["services.html", "Services"], ["services.html", "Services"]]);
-    const [showMenu, setShowMenu] = useState(false);
-    const [lightMode, switchLightMode] = useState(true);
+
+    const routes = [["index.html", "Home"], ["about.html", "About"], ["services.html", "Services"]];
 
     useEffect(() => {
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-        };
-
+        const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
-
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleTitleClick = () => {
-        window.location.href = "index.html";
-    }
-
-    const handleMenuOpen = () => {
-        setShowMenu(!showMenu);
-    };
-
-    const toggleLightMode = () => {
-        const body = document.body;
-        body.classList.toggle('dark-mode');
-        switchLightMode(!lightMode);
-    };
+    const toggleMenu = useCallback(() => setIsMobileMenuOpen(prev => !prev), []);
+    const toggleLightMode = useCallback(() => {
+        document.body.classList.toggle('dark-mode');
+        setIsLightMode(prev => !prev);
+    }, []);
 
     return (
         <Bar>
-            <h1 onClick={handleTitleClick}>{title}</h1>
-            <Spacer></Spacer>
+            <h1 onClick={() => (window.location.href = "index.html")}>YourTitle</h1>
+            <Spacer/>
             <Options>
-                {routes.length > 3 && windowWidth < 640 ?
-                    <Mobile>
-                        <SwitchDarkLightMode>
-                            {lightMode && <FaRegSun onClick={toggleLightMode} size={20}/>}
-                            {!lightMode && <FaMoon onClick={toggleLightMode} size={20}/>}
-                        </SwitchDarkLightMode>
-                        {!showMenu && <FaBars onClick={handleMenuOpen} size={20}/>}
-                        {showMenu && <IoClose onClick={handleMenuOpen} size={20}/>}
-                        <MobileMenu className={showMenu ? "open" : ""}>
-                            {routes.map((route, index) => (
-                                <a key={index} href={route[0]}>{route[1]}</a>
+                {windowWidth <= 640 ? (
+                    <>
+                        <SwitchModeButton onClick={toggleLightMode}>
+                            {isLightMode ? <FaRegSun size={20}/> : <FaMoon size={20}/>}
+                        </SwitchModeButton>
+                        {isMobileMenuOpen ? (
+                            <IoClose size={20} onClick={toggleMenu}/>
+                        ) : (
+                            <FaBars size={20} onClick={toggleMenu}/>
+                        )}
+                        <MobileMenu className={isMobileMenuOpen ? "open" : ""}>
+                            {routes.map(([path, label], index) => (
+                                <NavLink key={index} href={path}>{label}</NavLink>
                             ))}
                         </MobileMenu>
-                    </Mobile>
-                    :
-                    <>
-                        {routes.map((route, index) => (
-                            <a key={index} href={route[0]}>{route[1]}</a>
-                        ))}
-                        <SwitchDarkLightMode>
-                            {lightMode && <FaRegSun onClick={toggleLightMode} size={20}/>}
-                            {!lightMode && <FaMoon onClick={toggleLightMode} size={20}/>}
-                        </SwitchDarkLightMode>
                     </>
-                }
+                ) : (
+                    <>
+                        {routes.map(([path, label], index) => (
+                            <NavLink key={index} href={path}>{label}</NavLink>
+                        ))}
+                        <SwitchModeButton onClick={toggleLightMode}>
+                            {isLightMode ? <FaRegSun size={20}/> : <FaMoon size={20}/>}
+                        </SwitchModeButton>
+                    </>
+                )}
             </Options>
         </Bar>
-    )
+    );
 }
 
 export default Navbar;
 
 const Bar = styled.div`
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     width: 100%;
     position: fixed;
     display: flex;
@@ -98,7 +83,7 @@ const Bar = styled.div`
 `;
 
 const Spacer = styled.div`
-    width: 100%;
+    flex-grow: 1;
 `;
 
 const Options = styled.div`
@@ -106,19 +91,6 @@ const Options = styled.div`
     flex-direction: row;
     align-items: flex-end;
     width: auto;
-
-    a {
-        margin-right: 20px;
-        text-decoration: none;
-        color: var(--text-color);
-    }
-`;
-
-const Mobile = styled.div`
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    color: var(--text-color);
 `;
 
 const MobileMenu = styled.div`
@@ -126,27 +98,29 @@ const MobileMenu = styled.div`
     flex-direction: column;
     position: absolute;
     text-align: center;
-    top: 60px;
-    left: 0;
-    right: 0;
+    top: 60px; left: 0; right: 0;
     background-color: var(--background-color);
     box-shadow: var(--box-shadow);
     padding: 10px;
     z-index: 9999;
-
-    a {
-        color: var(--text-color);
-        text-decoration: none;
-        font-size: 20px;
-        margin: 10px;
-    }
 
     &.open {
         display: flex;
     }
 `;
 
-const SwitchDarkLightMode = styled.div`
+const NavLink = styled.a`
+    color: var(--text-color);
+    margin-right: 20px;
+    font-size: 20px;
+    text-decoration: none;
+
+    @media only screen and (max-width: 640px) {
+        margin: 20px;
+    }
+`;
+
+const SwitchModeButton  = styled.div`
     display: flex;
     align-items: center;
     cursor: pointer;
